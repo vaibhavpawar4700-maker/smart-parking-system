@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-dark text-white">
+
+<div class="container text-center mt-5">
+
+    <h2>📊 Dashboard</h2>
+
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="card bg-primary p-3">Total Slots: {{ total }}</div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success p-3">Available: {{ available }}</div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-danger p-3">Occupied: {{ occupied }}</div>
+        </div>
+    </div>
+
+    <a href="/" class="btn btn-light mt-4">Back</a>
+
+</div>
+
+</body>
+</html>
