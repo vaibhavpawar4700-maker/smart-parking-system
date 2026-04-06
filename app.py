@@ -1,20 +1,18 @@
-from flask import Flask, render_template, request, redirect, session
+from flask import Flask, render_template, request, redirect, session, flash
 from flask_sqlalchemy import SQLAlchemy
 import datetime
 import os
 
 app = Flask(__name__)
-
-# SECRET KEY
 app.secret_key = "secret123"
 
-# DATABASE (Render compatible)
+# ---------------- DATABASE ----------------
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-# -------------------- MODELS --------------------
+# ---------------- MODELS ----------------
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -35,34 +33,39 @@ class ParkingSession(db.Model):
     amount = db.Column(db.Integer)
 
 
-# -------------------- ROUTES --------------------
+# ---------------- ROUTES ----------------
 
 @app.route('/')
 def index():
     total = Slot.query.count()
     available = Slot.query.filter_by(status="Available").count()
     occupied = Slot.query.filter_by(status="Occupied").count()
-    return render_template('index.html', total=total, available=available, occupied=occupied)
+
+    return render_template('index.html',
+                           total=total,
+                           available=available,
+                           occupied=occupied)
 
 
-# REGISTER
-@app.route('/register', methods=['GET','POST'])
+# -------- REGISTER --------
+@app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-
-        user = User(username=username, password=password)
+        user = User(
+            username=request.form['username'],
+            password=request.form['password']
+        )
         db.session.add(user)
         db.session.commit()
 
+        flash("Registration Successful ✅")
         return redirect('/login')
 
     return render_template('register.html')
 
 
-# LOGIN
-@app.route('/login', methods=['GET','POST'])
+# -------- LOGIN --------
+@app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         user = User.query.filter_by(
@@ -72,43 +75,48 @@ def login():
 
         if user:
             session['user'] = user.username
+            flash("Login Successful 🔥")
             return redirect('/')
         else:
-            return "Invalid Login"
+            flash("Invalid Login ❌")
 
     return render_template('login.html')
 
 
-# LOGOUT
+# -------- LOGOUT --------
 @app.route('/logout')
 def logout():
     session.pop('user', None)
+    flash("Logged out")
     return redirect('/')
 
 
-# CREATE SLOTS
+# -------- CREATE SLOTS --------
 @app.route('/create_slots')
 def create_slots():
     if Slot.query.count() == 0:
-        for i in range(10):
+        for i in range(20):
             db.session.add(Slot())
         db.session.commit()
-        return "Slots Created"
+        flash("Slots Created Successfully 🚗")
     else:
-        return "Slots Already Exist"
+        flash("Slots Already Exist ⚠️")
+
+    return redirect('/')
 
 
-# VIEW SLOTS
+# -------- VIEW SLOTS --------
 @app.route('/slots')
 def slots():
-    all_slots = Slot.query.all()
-    return render_template('slots.html', slots=all_slots)
+    slots = Slot.query.all()
+    return render_template('slots.html', slots=slots)
 
 
-# BOOK SLOT
+# -------- BOOK SLOT --------
 @app.route('/book/<int:id>')
 def book(id):
     slot = Slot.query.get(id)
+
     if slot.status == "Available":
         slot.status = "Occupied"
 
@@ -120,10 +128,12 @@ def book(id):
         db.session.add(session_data)
         db.session.commit()
 
+        flash("Slot Booked 🚗")
+
     return redirect('/slots')
 
 
-# EXIT SLOT + PAYMENT
+# -------- EXIT + PAYMENT --------
 @app.route('/exit/<int:id>')
 def exit(id):
     slot = Slot.query.get(id)
@@ -135,23 +145,42 @@ def exit(id):
         ps.exit_time = datetime.datetime.now()
 
         hours = (ps.exit_time - ps.entry_time).seconds // 3600 + 1
-        ps.amount = hours * 10
+        ps.amount = hours * 20
 
         db.session.commit()
+
+        flash(f"Payment: ₹{ps.amount}")
 
     return redirect('/slots')
 
 
-# HISTORY
+# -------- HISTORY --------
 @app.route('/history')
 def history():
-    sessions = ParkingSession.query.all()
-    return render_template('history.html', sessions=sessions)
+    data = ParkingSession.query.all()
+    return render_template('history.html', data=data)
 
 
-# -------------------- MAIN --------------------
+# -------- PROFILE --------
+@app.route('/profile')
+def profile():
+    if 'user' not in session:
+        return redirect('/login')
+
+    return render_template('profile.html', user=session['user'])
+
+
+# -------- PROJECT INFO --------
+@app.route('/project')
+def project():
+    return render_template('project.html')
+
+
+# ---------------- MAIN ----------------
 
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
-    app.run(debug=True)
+
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
