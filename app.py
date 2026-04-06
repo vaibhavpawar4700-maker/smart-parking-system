@@ -1,25 +1,31 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect, session
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+import datetime
+import os
 
 app = Flask(__name__)
 
-# ---------------- CONFIG ----------------
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///parking.db'
+# SECRET KEY
+app.secret_key = "secret123"
+
+# DATABASE (Render compatible)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
-# ---------------- DATABASE ----------------
+# -------------------- MODELS --------------------
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100))
     password = db.Column(db.String(100))
 
-class ParkingSlot(db.Model):
+
+class Slot(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    status = db.Column(db.String(20))
+    status = db.Column(db.String(20), default="Available")
+
 
 class ParkingSession(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -28,27 +34,35 @@ class ParkingSession(db.Model):
     exit_time = db.Column(db.DateTime)
     amount = db.Column(db.Integer)
 
-# ---------------- ROUTES ----------------
+
+# -------------------- ROUTES --------------------
 
 @app.route('/')
-def home():
-    return render_template('index.html')
+def index():
+    total = Slot.query.count()
+    available = Slot.query.filter_by(status="Available").count()
+    occupied = Slot.query.filter_by(status="Occupied").count()
+    return render_template('index.html', total=total, available=available, occupied=occupied)
 
-# Register
-@app.route('/register', methods=['GET', 'POST'])
+
+# REGISTER
+@app.route('/register', methods=['GET','POST'])
 def register():
     if request.method == 'POST':
-        user = User(
-            username=request.form['username'],
-            password=request.form['password']
-        )
+        username = request.form['username']
+        password = request.form['password']
+
+        user = User(username=username, password=password)
         db.session.add(user)
         db.session.commit()
-        return "Registered ✅"
+
+        return redirect('/login')
+
     return render_template('register.html')
 
-# Login
-@app.route('/login', methods=['GET', 'POST'])
+
+# LOGIN
+@app.route('/login', methods=['GET','POST'])
 def login():
     if request.method == 'POST':
         user = User.query.filter_by(
@@ -57,89 +71,87 @@ def login():
         ).first()
 
         if user:
-            return "Login Successful ✅"
+            session['user'] = user.username
+            return redirect('/')
         else:
-            return "Invalid ❌"
+            return "Invalid Login"
+
     return render_template('login.html')
 
-# Create Slots
+
+# LOGOUT
+@app.route('/logout')
+def logout():
+    session.pop('user', None)
+    return redirect('/')
+
+
+# CREATE SLOTS
 @app.route('/create_slots')
 def create_slots():
-    if ParkingSlot.query.count() == 0:
-        for i in range(1, 11):
-            db.session.add(ParkingSlot(status="Available"))
+    if Slot.query.count() == 0:
+        for i in range(10):
+            db.session.add(Slot())
         db.session.commit()
-        return "Slots Created ✅"
-    return "Already Created"
+        return "Slots Created"
+    else:
+        return "Slots Already Exist"
 
-# View Slots
+
+# VIEW SLOTS
 @app.route('/slots')
 def slots():
-    slots = ParkingSlot.query.all()
-    return render_template('slots.html', slots=slots)
+    all_slots = Slot.query.all()
+    return render_template('slots.html', slots=all_slots)
 
-# Book Slot
+
+# BOOK SLOT
 @app.route('/book/<int:id>')
 def book(id):
-    slot = ParkingSlot.query.get(id)
+    slot = Slot.query.get(id)
     if slot.status == "Available":
         slot.status = "Occupied"
 
-        session = ParkingSession(
+        session_data = ParkingSession(
             slot_id=id,
-            entry_time=datetime.now()
+            entry_time=datetime.datetime.now()
         )
 
-        db.session.add(session)
+        db.session.add(session_data)
         db.session.commit()
 
-        return "Booked 🚗"
-    return "Already Occupied ❌"
+    return redirect('/slots')
 
-# Exit Slot
+
+# EXIT SLOT + PAYMENT
 @app.route('/exit/<int:id>')
 def exit(id):
-    slot = ParkingSlot.query.get(id)
+    slot = Slot.query.get(id)
+    slot.status = "Available"
 
-    session = ParkingSession.query.filter_by(slot_id=id, exit_time=None).first()
+    ps = ParkingSession.query.filter_by(slot_id=id, exit_time=None).first()
 
-    if session:
-        session.exit_time = datetime.now()
+    if ps:
+        ps.exit_time = datetime.datetime.now()
 
-        duration = (session.exit_time - session.entry_time).seconds // 60
-
-        # Smart Pricing
-        hour = datetime.now().hour
-        rate = 5 if 18 <= hour <= 22 else 2
-
-        session.amount = duration * rate
-
-        slot.status = "Available"
+        hours = (ps.exit_time - ps.entry_time).seconds // 3600 + 1
+        ps.amount = hours * 10
 
         db.session.commit()
 
-        return f"Exited 🚪 | ₹{session.amount}"
+    return redirect('/slots')
 
-    return "Error ❌"
 
-# Dashboard
-@app.route('/dashboard')
-def dashboard():
-    total = ParkingSlot.query.count()
-    available = ParkingSlot.query.filter_by(status="Available").count()
-    occupied = ParkingSlot.query.filter_by(status="Occupied").count()
-
-    return render_template('dashboard.html', total=total, available=available, occupied=occupied)
-
-# History
+# HISTORY
 @app.route('/history')
 def history():
     sessions = ParkingSession.query.all()
     return render_template('history.html', sessions=sessions)
 
-# ---------------- MAIN ----------------
 
-if __name__ == '__main__':
+# -------------------- MAIN --------------------
+
+if __name__ == "__main__":
     with app.app_context():
         db.create_all()
     app.run(debug=True)
