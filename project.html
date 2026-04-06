@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>📘 Project Information</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            font-family: 'Segoe UI';
+            color: white;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 220px;
+            position: fixed;
+            height: 100%;
+            background: #020617;
+            padding: 20px;
+        }
+
+        .sidebar a {
+            display: block;
+            margin: 10px 0;
+        }
+
+        /* Content */
+        .content {
+            margin-left: 240px;
+            padding: 20px;
+        }
+
+        /* Glass Card */
+        .glass-card {
+            width: 650px;
+            margin: 40px auto;
+            padding: 30px;
+
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(15px);
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.2);
+
+            box-shadow: 0px 0px 25px rgba(0,0,0,0.6);
+        }
+
+        .gradient-text {
+            background: linear-gradient(45deg,#22c55e,#3b82f6);
+            -webkit-background-clip: text;
+            color: transparent;
+            font-weight: bold;
+        }
+
+        .highlight {
+            color: #3b82f6;
+            font-weight: bold;
+        }
+
+        .developer {
+            background: linear-gradient(45deg,#22c55e,#3b82f6);
+            -webkit-background-clip: text;
+            color: transparent;
+            font-weight: bold;
+            font-size: 20px;
+        }
+
+        hr {
+            border-color: rgba(255,255,255,0.2);
+        }
+    </style>
+</head>
+
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+    <h4 class="gradient-text">🚗 Parking</h4>
+
+    <!-- Username -->
+    <h6 style="color:#22c55e;">👋 {{ session['user'] }}</h6>
+
+    <hr>
+
+    <a href="/" class="btn btn-dark w-100">Dashboard</a>
+    <a href="/slots" class="btn btn-dark w-100">Slots</a>
+    <a href="/history" class="btn btn-dark w-100">History</a>
+    <a href="/payments" class="btn btn-dark w-100">Payments</a>
+    <a href="/profile" class="btn btn-dark w-100">Profile</a>
+    <a href="/logout" class="btn btn-danger w-100">Logout</a>
+</div>
+
+<!-- Content -->
+<div class="content">
+
+    <div class="glass-card">
+
+        <h2 class="gradient-text text-center">📘 Smart Parking System</h2>
+
+        <hr>
+
+        <p><b>Project Title:</b> 
+            <span class="highlight">Smart Parking Management System</span>
+        </p>
+
+        <p><b>Course:</b> SY B.Sc Computer Science</p>
+        <p><b>Subject:</b> Software Engineering Mini Project</p>
+
+        <hr>
+
+        <!-- 🔥 PREMIUM DEVELOPED BY -->
+        <p><b>Developed By:</b> 
+            <span class="developer">VAIBHAV PAWAR</span>
+        </p>
+
+        <p><b>Team Members:</b>PRASAD SHINDE & SHREYES PAGARE</p>
+
+        <hr>
+
+        <p><b>Technologies Used:</b></p>
+        <ul>
+            <li>Python (Flask)</li>
+            <li>HTML, CSS (Bootstrap)</li>
+            <li>JavaScript (Chart.js)</li>
+            <li>SQLite Database</li>
+        </ul>
+
+        <hr>
+
+        <p><b>Project Description:</b></p>
+        <p>
+            This Smart Parking System provides efficient slot management with 
+            real-time booking, fee calculation, payment tracking, and analytics dashboard. 
+            It helps users manage parking easily using modern web technologies.
+        </p>
+
+        <hr>
+
+        <div class="text-center">
+            <a href="/" class="btn btn-primary">Back to Dashboard</a>
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>
